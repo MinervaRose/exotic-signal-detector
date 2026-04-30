@@ -103,6 +103,8 @@ def detect(
     threshold: float = typer.Option(3.0, help="Abs z-score threshold for flagging"),
     window: int = typer.Option(25, help="Rolling mean window size (>= 2)"),
     case_file: bool = typer.Option(False, "--case-file", help="Render full case file output"),
+    plot: bool = typer.Option(False, "--plot", help="Show interactive plot"),
+    plot_out: Path | None = typer.Option(None, "--plot-out", help="Save plot to file instead of displaying"),
 ) -> None:
     """Detect anomalies in a saved signal using z-score thresholding."""
     arr, data = _load_npz(signal)
@@ -117,3 +119,6 @@ def detect(
         render_case_file(case, arr)
     else:
         print_signal_summary(case, arr)
+    if plot or plot_out is not None:
+        from exolab.plotting import plot_detection
+        plot_detection(arr, result, signal_path=str(signal), out=plot_out)

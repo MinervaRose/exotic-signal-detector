@@ -6,6 +6,7 @@ dependencies = [
     "typer>=0.12",
     "numpy>=1.26",
     "rich>=13",
+    "matplotlib>=3.8",
 ]
 
 [project.scripts]
