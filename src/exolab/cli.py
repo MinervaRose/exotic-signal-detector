@@ -6,6 +6,7 @@ import typer
 from rich.console import Console
 
 from exolab.anomalies import inject_drift, inject_dropout, inject_spike
+from exolab.detection import detect as run_detect
 from exolab.reporting import CaseFile, print_signal_summary, render_case_file
 from exolab.signals import generate_signal
 
@@ -17,6 +18,32 @@ _INJECTORS = {
     "dropout": inject_dropout,
     "drift": inject_drift,
 }
+
+
+def _load_npz(path: Path) -> tuple[np.ndarray, dict]:
+    data = dict(np.load(path, allow_pickle=True))
+    return data["signal"], data
+
+
+def _parse_anomalies(data: dict) -> list[dict]:
+    result = []
+    for k, v in data.items():
+        if k.startswith("anomaly_"):
+            try:
+                result.append(json.loads(str(v)))
+            except (json.JSONDecodeError, ValueError):
+                pass
+    return result
+
+
+def _build_case(path: Path, arr: np.ndarray, data: dict) -> CaseFile:
+    return CaseFile(
+        signal_path=str(path),
+        length=len(arr),
+        freq=float(data["freq"]) if "freq" in data else None,
+        noise=float(data["noise"]) if "noise" in data else None,
+        anomalies=_parse_anomalies(data),
+    )
 
 
 @app.command()
@@ -62,25 +89,30 @@ def inspect(
     case_file: bool = typer.Option(False, "--case-file", help="Render full case file output"),
 ) -> None:
     """Inspect a saved signal and display a Rich summary."""
-    data = dict(np.load(signal, allow_pickle=True))
-    arr = data["signal"]
+    arr, data = _load_npz(signal)
+    case = _build_case(signal, arr, data)
+    if case_file:
+        render_case_file(case, arr)
+    else:
+        print_signal_summary(case, arr)
 
-    anomaly_list: list[dict] = []
-    for k, v in data.items():
-        if k.startswith("anomaly_"):
-            try:
-                anomaly_list.append(json.loads(str(v)))
-            except (json.JSONDecodeError, ValueError):
-                pass
 
-    case = CaseFile(
-        signal_path=str(signal),
-        length=len(arr),
-        freq=float(data["freq"]) if "freq" in data else None,
-        noise=float(data["noise"]) if "noise" in data else None,
-        anomalies=anomaly_list,
-    )
-
+@app.command()
+def detect(
+    signal: Path = typer.Option(..., help="Input .npz signal file"),
+    threshold: float = typer.Option(3.0, help="Abs z-score threshold for flagging"),
+    window: int = typer.Option(25, help="Rolling mean window size (>= 2)"),
+    case_file: bool = typer.Option(False, "--case-file", help="Render full case file output"),
+) -> None:
+    """Detect anomalies in a saved signal using z-score thresholding."""
+    arr, data = _load_npz(signal)
+    try:
+        result = run_detect(arr, window=window, threshold=threshold)
+    except ValueError as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(1)
+    case = _build_case(signal, arr, data)
+    case.detection = result
     if case_file:
         render_case_file(case, arr)
     else:
