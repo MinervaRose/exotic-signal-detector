@@ -2,6 +2,8 @@
 
 ![Tests](https://github.com/MinervaRose/exotic-signal-detector/actions/workflows/tests.yml/badge.svg)
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20433747.svg)](https://doi.org/10.5281/zenodo.20433747)
+
 ![Python](https://img.shields.io/badge/python-3.12-blue)
 ![CLI](https://img.shields.io/badge/CLI-Typer-009688)
 ![Tests](https://img.shields.io/badge/tests-passing-brightgreen)
