@@ -1,5 +1,7 @@
 # exotic-signal-detector
 
+![Tests](https://github.com/MinervaRose/exotic-signal-detector/actions/workflows/tests.yml/badge.svg)
+
 ![Python](https://img.shields.io/badge/python-3.12-blue)
 ![CLI](https://img.shields.io/badge/CLI-Typer-009688)
 ![Tests](https://img.shields.io/badge/tests-passing-brightgreen)
